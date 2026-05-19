@@ -13,5 +13,10 @@
       "title": "Domovská stránka",
       "description": "Vítejte na naší domovské stránce! Jsme rádi, že jste zde. Prozkoumejte naše služby a produkty, které vám mohou pomoci dosáhnout vašich cílů. Neváhejte nás kontaktovat pro více informací."
     }
+  },
+  "inzerat": {
+    "listings": {
+      "title": "Přehled inzerátů"
+    }
   }
 }
