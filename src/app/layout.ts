@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
+import "@mantine/core/styles.css";
+// import { MantineProvider } from "@mantine/core";
 
 export const metadata: Metadata = {
   title: {
