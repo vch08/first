@@ -6,6 +6,7 @@ import {
   Card,
   Group,
   Modal,
+  NumberInput,
   SegmentedControl,
   Select,
   SimpleGrid,
@@ -16,11 +17,17 @@ import {
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { IconSearch } from "@tabler/icons-react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import type { Advert } from "@/db/schemas";
 
 export default function App() {
   const [adverts, setAdverts] = useState<Advert[]>([]);
+  const [priceFilter, setPriceFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("Vše");
+  const [status, setStatus] = useState("Vše");
 
   const fetchAdverts = useCallback(async () => {
     const res = await fetch("/api/adverts");
@@ -34,29 +41,67 @@ export default function App() {
   }, [fetchAdverts]);
 
   const handleAddAdvert = async (values: Omit<Advert, "id">) => {
-    await fetch("/api/adverts", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(values),
-    });
+    try {
+      const res = await fetch("/api/adverts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(values),
+      });
 
-    fetchAdverts();
+      if (!res.ok) {
+        throw new Error("Failed to create advert");
+      }
+
+      await fetchAdverts();
+      form.reset();
+      setOpened(false);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const form = useForm({
     initialValues: {
       title: "",
       description: "",
-      price: "",
+      price: 0,
       category: "",
       status: "",
       seller: "",
     },
+
+    validate: {
+      title: (value) => (value.trim() ? null : "Název je povinný"),
+      description: (value) => (value.trim() ? null : "Popis je povinný"),
+      category: (value) => (value.trim() ? null : "Kategorie je povinná"),
+      price: (value) => (value >= 0 ? null : "Cena musí být 0 nebo vyšší"),
+      seller: (value) => (value.trim() ? null : "Prodejce je povinný"),
+    },
   });
 
   const [opened, setOpened] = useState(false);
+  const params = useParams();
+  const locale = params.locale as string;
+
+  const filteredAdverts = adverts.filter((advert) => {
+    const matchesSearch = advert.title.toLowerCase().includes(search.toLowerCase());
+
+    const matchesPrice =
+      priceFilter === "all"
+        ? true
+        : priceFilter === "free"
+          ? advert.price == null || Number(advert.price) === 0
+          : Number(advert.price) > 0;
+
+    const matchesCategory =
+      category === "Vše" ? true : advert.category?.trim().toLowerCase() === category.toLowerCase();
+
+    const matchesStatus = status === "Vše" ? true : advert.status === status;
+
+    return matchesSearch && matchesPrice && matchesCategory && matchesStatus;
+  });
 
   return (
     <Stack p="lg">
@@ -68,6 +113,7 @@ export default function App() {
           + Přidat nabídku
         </Button>
       </Group>
+
       <Modal opened={opened} onClose={() => setOpened(false)} title="Přidat nabídku" centered>
         <form onSubmit={form.onSubmit(handleAddAdvert)}>
           <Stack>
@@ -75,7 +121,7 @@ export default function App() {
 
             <TextInput label="Popis" {...form.getInputProps("description")} />
 
-            <TextInput label="Cena" {...form.getInputProps("price")} />
+            <NumberInput label="Cena" placeholder="Zadej cenu" min={0} {...form.getInputProps("price")} />
 
             <Select
               label="Kategorie"
@@ -88,7 +134,7 @@ export default function App() {
 
             <TextInput label="Prodejce" {...form.getInputProps("seller")} />
 
-            <Button type="submit" color="orange">
+            <Button onClick={() => {}} type="submit" color="orange">
               Uložit
             </Button>
           </Stack>
@@ -96,16 +142,30 @@ export default function App() {
       </Modal>
 
       <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} mt="md">
-        <TextInput placeholder="Hledat..." leftSection={<IconSearch size={16} />} />
+        <TextInput
+          placeholder="Hledat..."
+          leftSection={<IconSearch size={16} />}
+          value={search}
+          onChange={(e) => setSearch(e.currentTarget.value)}
+        />
 
         <Select
           placeholder="Kategorie"
+          value={category}
+          onChange={(value) => setCategory(value || "Vše")}
           data={["Vše", "Nábytek", "Dětské věci", "Oblečení", "Elektronika", "Knihy", "Ostatní věci z domácnosti"]}
         />
 
-        <Select placeholder="Stav" data={["Vše", "Volno", "Rezervováno"]} />
+        <Select
+          placeholder="Stav"
+          value={status}
+          onChange={(value) => setStatus(value ?? "Vše")}
+          data={["Vše", "Volno", "Rezervováno"]}
+        />
       </SimpleGrid>
       <SegmentedControl
+        value={priceFilter}
+        onChange={setPriceFilter}
         data={[
           { value: "all", label: "Vše" },
           { value: "free", label: "Zdarma" },
@@ -113,7 +173,7 @@ export default function App() {
         ]}
       />
       <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
-        {adverts.map((advert) => (
+        {filteredAdverts.map((advert) => (
           <Card key={advert.id} shadow="sm" padding="lg" radius="md" withBorder>
             <Stack>
               <Group justify="space-between">
@@ -131,9 +191,10 @@ export default function App() {
                   {advert.category}
                 </Badge>
 
-                {/* <Badge color={advert.price === "Zdarma" ? "green" : "orange"}>{advert.price}</Badge> */}
-                <Badge color={advert.price === "Zdarma" ? "green" : "orange"}>
-                  {advert.price === "Zdarma" ? "Zdarma" : `${advert.price} Kč`}
+                <Badge color={advert.price == null || Number(advert.price) === 0 ? "green" : "orange"}>
+                  {advert.price == null || Number(advert.price) === 0
+                    ? "Zdarma"
+                    : `${Number(advert.price).toFixed(0)} Kč`}
                 </Badge>
               </Group>
 
@@ -141,9 +202,11 @@ export default function App() {
                 Nabízí: {advert.seller}
               </Text>
 
-              <Button color="orange" fullWidth>
-                Detail
-              </Button>
+              <Link href={`/${locale}/adverts/${advert.id}`}>
+                <Button fullWidth color="orange" variant="light">
+                  Detail
+                </Button>
+              </Link>
             </Stack>
           </Card>
         ))}

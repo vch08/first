@@ -7,7 +7,7 @@ export const advert = sqliteTable("advert", {
 
   description: text("description").notNull(),
 
-  price: text("price").notNull(),
+  price: integer("price").notNull(),
 
   category: text("category").notNull(),
 

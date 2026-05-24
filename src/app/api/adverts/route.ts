@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { advert } from "@/db/schemas/advert.schema";
+// import Link from "next/link";
+// import { Button } from "@mantine/core";
 
 export async function GET() {
   const data = await db.select().from(advert);
