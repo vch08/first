@@ -41,18 +41,23 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     const body = await req.json();
 
+    if (body.email !== undefined && !body.email.includes("@")) {
+      return new NextResponse("Invalid email", { status: 400 });
+    }
+
     console.log("UPDATING:", numericId);
     console.log("BODY:", body);
 
     const updated = await db
       .update(advert)
       .set({
-        title: body.title,
-        description: body.description,
-        category: body.category,
-        seller: body.seller,
-        status: body.status,
-        price: body.price,
+        ...(body.title !== undefined && { title: body.title }),
+        ...(body.description !== undefined && { description: body.description }),
+        ...(body.category !== undefined && { category: body.category }),
+        ...(body.seller !== undefined && { seller: body.seller }),
+        ...(body.status !== undefined && { status: body.status }),
+        ...(body.price !== undefined && { price: body.price }),
+        ...(body.email !== undefined && { email: body.email }),
       })
       .where(eq(advert.id, numericId))
       .returning();
@@ -71,4 +76,24 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       status: 500,
     });
   }
+}
+
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+
+  const numericId = Number(id);
+
+  console.log("DELETE ID:", id);
+
+  if (!Number.isFinite(numericId)) {
+    return new NextResponse("Invalid ID", { status: 400 });
+  }
+
+  const deleted = await db.delete(advert).where(eq(advert.id, numericId)).returning();
+
+  if (!deleted.length) {
+    return new NextResponse("Not found", { status: 404 });
+  }
+
+  return NextResponse.json({ success: true });
 }

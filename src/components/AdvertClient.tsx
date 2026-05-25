@@ -13,6 +13,7 @@ import {
   Textarea,
   TextInput,
 } from "@mantine/core";
+import { openConfirmModal } from "@mantine/modals";
 import Link from "next/link";
 import { useState } from "react";
 import type { Advert } from "@/db/schemas";
@@ -32,7 +33,76 @@ export default function AdvertClient({ advert, locale }: Props) {
     seller: advert.seller,
     status: advert.status,
     price: advert.price,
+    email: advert.email ?? "",
   });
+
+  async function reserveAdvert() {
+    try {
+      const res = await fetch(`/api/adverts/${advert.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: "Rezervováno",
+        }),
+      });
+
+      if (!res.ok) {
+        console.error("Reservation failed");
+        return;
+      }
+
+      const updated = await res.json();
+
+      setForm(updated);
+    } catch (err) {
+      console.error("Error reserving advert:", err);
+    }
+  }
+
+  async function deleteAdvert() {
+    console.log("DELETE CLICKED");
+
+    const confirmed = window.confirm("Opravdu chceš smazat tuto nabídku?");
+    if (!confirmed) return;
+
+    const res = await fetch(`/api/adverts/${advert.id}`, {
+      method: "DELETE",
+    });
+
+    const text = await res.text(); // 👈 IMPORTANT
+
+    console.log("DELETE STATUS:", res.status);
+    console.log("DELETE RESPONSE:", text);
+
+    if (!res.ok) {
+      console.error("Delete failed:", text);
+      return;
+    }
+
+    window.location.href = `/${locale}`;
+  }
+
+  // function confirmDelete() {
+  //   modals.openConfirmModal({
+  //     title: "Smazat inzerát",
+  //     children: "Opravdu chceš smazat tuto nabídku?",
+  //     labels: { confirm: "Smazat", cancel: "Zrušit" },
+  //     confirmProps: { color: "red" },
+  //     onConfirm: deleteAdvert,
+  //   });
+  // }
+
+  function confirmDelete() {
+    openConfirmModal({
+      title: "Smazat inzerát",
+      children: "Opravdu chceš smazat tuto nabídku?",
+      labels: { confirm: "Smazat", cancel: "Zrušit" },
+      confirmProps: { color: "red" },
+      onConfirm: deleteAdvert,
+    });
+  }
 
   async function saveChanges() {
     try {
@@ -140,6 +210,20 @@ export default function AdvertClient({ advert, locale }: Props) {
             </Group>
 
             <Group justify="space-between">
+              <Text fw={500}>Email</Text>
+
+              {isEditing ? (
+                <TextInput
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.currentTarget.value })}
+                  placeholder="example@email.com"
+                />
+              ) : (
+                <Text c="dimmed">{form.email}</Text>
+              )}
+            </Group>
+
+            <Group justify="space-between">
               <Text fw={500}>Stav</Text>
 
               {isEditing ? (
@@ -156,6 +240,12 @@ export default function AdvertClient({ advert, locale }: Props) {
               )}
             </Group>
           </Stack>
+
+          {isEditing ? (
+            <Button color="red" variant="light" onClick={confirmDelete}>
+              Smazat
+            </Button>
+          ) : null}
 
           <Divider />
 
@@ -188,8 +278,13 @@ export default function AdvertClient({ advert, locale }: Props) {
               )}
             </Group>
 
-            <Button color="orange" variant="light">
-              Kontaktovat
+            <Button
+              color={form.status === "Volno" ? "orange" : "gray"}
+              variant="light"
+              disabled={form.status !== "Volno"}
+              onClick={reserveAdvert}
+            >
+              {form.status === "Volno" ? "Rezervovat" : "Rezervováno"}
             </Button>
           </Group>
         </Stack>

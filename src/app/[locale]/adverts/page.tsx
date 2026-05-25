@@ -15,6 +15,7 @@ export default async function AdvertDetailPage({ params }: { params: { id: strin
       <p>{advert.description}</p>
       <p>{advert.price}</p>
       <p>{advert.seller}</p>
+      <p>{advert.email}</p>
     </div>
   );
 }

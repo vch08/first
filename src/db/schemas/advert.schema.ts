@@ -14,6 +14,8 @@ export const advert = sqliteTable("advert", {
   status: text("status").notNull(),
 
   seller: text("seller").notNull(),
+
+  email: text("email").notNull(),
 });
 
 export type Advert = typeof advert.$inferSelect;

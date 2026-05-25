@@ -15,12 +15,13 @@ import {
   TextInput,
   Title,
 } from "@mantine/core";
-import { useForm } from "@mantine/form";
+import { isEmail, useForm } from "@mantine/form";
 import { IconSearch } from "@tabler/icons-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import type { Advert } from "@/db/schemas";
+import type { CreateAdvertInput } from "@/types/advert";
 
 export default function App() {
   const [adverts, setAdverts] = useState<Advert[]>([]);
@@ -40,26 +41,60 @@ export default function App() {
     fetchAdverts();
   }, [fetchAdverts]);
 
-  const handleAddAdvert = async (values: Omit<Advert, "id">) => {
-    try {
-      const res = await fetch("/api/adverts", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(values),
-      });
+  // const handleAddAdvert = async (values: Omit<Advert, "id">) => {
+  //   try {
+  //     const res = await fetch("/api/adverts", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify(values),
+  //     });
 
-      if (!res.ok) {
-        throw new Error("Failed to create advert");
-      }
+  //     if (!res.ok) {
+  //       throw new Error("Failed to create advert");
+  //     }
 
-      await fetchAdverts();
-      form.reset();
-      setOpened(false);
-    } catch (err) {
-      console.error(err);
+  //     await fetchAdverts();
+  //     form.reset();
+  //     setOpened(false);
+  //   } catch (err) {
+  //     console.error(err);
+  //   }
+  // };
+
+  const handleAddAdvert = async (values: CreateAdvertInput) => {
+    if (!values.email) {
+      console.error("EMAIL MISSING:", values);
+      return;
     }
+
+    if (!values.email.includes("@")) {
+      console.error("EMAIL INVALID:", values.email);
+      return;
+    }
+
+    const payload = {
+      ...values,
+      email: values.email.trim(),
+    };
+
+    const res = await fetch("/api/adverts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      console.error("SERVER ERROR:", data);
+      throw new Error(data?.error || "Failed");
+    }
+
+    await fetchAdverts();
+    form.reset();
+    setOpened(false);
   };
 
   const form = useForm({
@@ -70,6 +105,7 @@ export default function App() {
       category: "",
       status: "",
       seller: "",
+      email: "",
     },
 
     validate: {
@@ -78,6 +114,7 @@ export default function App() {
       category: (value) => (value.trim() ? null : "Kategorie je povinná"),
       price: (value) => (value >= 0 ? null : "Cena musí být 0 nebo vyšší"),
       seller: (value) => (value.trim() ? null : "Prodejce je povinný"),
+      email: isEmail("Neplatný email"),
     },
   });
 
@@ -133,6 +170,7 @@ export default function App() {
             <Select placeholder="Stav" data={["Volno", "Rezervováno"]} label="Stav" {...form.getInputProps("status")} />
 
             <TextInput label="Prodejce" {...form.getInputProps("seller")} />
+            <TextInput label="Email" {...form.getInputProps("email")} />
 
             <Button onClick={() => {}} type="submit" color="orange">
               Uložit

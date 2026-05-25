@@ -12,6 +12,12 @@ export async function GET() {
 export async function POST(req: Request) {
   const body = await req.json();
 
+  console.log("POST BODY:", body); // IMPORTANT DEBUG
+
+  if (!body.email?.includes("@")) {
+    return NextResponse.json({ error: "Invalid or missing email" }, { status: 400 });
+  }
+
   const inserted = await db
     .insert(advert)
     .values({
@@ -21,6 +27,7 @@ export async function POST(req: Request) {
       category: body.category,
       status: body.status || "Volno",
       seller: body.seller,
+      email: body.email.trim(),
     })
     .returning();
 

@@ -5,5 +5,5 @@ CREATE TABLE `advert` (
 	`price` text NOT NULL,
 	`category` text NOT NULL,
 	`status` text NOT NULL,
-	`seller` text NOT NULL
-);
+	`seller` text NOT NULL,
+  'email' text NOT NULL
