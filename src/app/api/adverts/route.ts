@@ -10,26 +10,45 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const body = await req.json();
+  try {
+    const formData = await req.formData();
 
-  console.log("POST BODY:", body); // IMPORTANT DEBUG
+    const title = formData.get("title") as string;
+    const description = formData.get("description") as string;
+    const category = formData.get("category") as string;
+    const seller = formData.get("seller") as string;
+    const email = formData.get("email") as string;
+    const price = Number(formData.get("price"));
+    const status = (formData.get("status") as string) || "Volno";
+    const image = formData.get("image") as string;
 
-  if (!body.email?.includes("@")) {
-    return NextResponse.json({ error: "Invalid or missing email" }, { status: 400 });
+    if (!email || !email.includes("@")) {
+      return NextResponse.json({ error: "Invalid email" }, { status: 400 });
+    }
+
+    const inserted = await db
+      .insert(advert)
+      .values({
+        title,
+        description,
+        category,
+        seller,
+        email,
+        price,
+        status,
+        image,
+      })
+      .returning();
+
+    return NextResponse.json(inserted[0]);
+  } catch (err) {
+    console.error("POST /adverts failed:", err);
+
+    return NextResponse.json(
+      {
+        error: err instanceof Error ? err.message : String(err),
+      },
+      { status: 500 },
+    );
   }
-
-  const inserted = await db
-    .insert(advert)
-    .values({
-      title: body.title,
-      description: body.description,
-      price: body.price,
-      category: body.category,
-      status: body.status || "Volno",
-      seller: body.seller,
-      email: body.email.trim(),
-    })
-    .returning();
-
-  return NextResponse.json(inserted[0]);
 }

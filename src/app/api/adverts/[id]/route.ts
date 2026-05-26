@@ -26,9 +26,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   return NextResponse.json(data[0]);
 }
 
-//
 // UPDATE ADVERT
-//
+
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
@@ -39,9 +38,38 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return new NextResponse("Invalid ID", { status: 400 });
     }
 
-    const body = await req.json();
+    const formData = await req.formData();
 
-    if (body.email !== undefined && !body.email.includes("@")) {
+    const imageFile = formData.get("image");
+
+    let imageUrl: string | undefined;
+
+    if (imageFile && imageFile instanceof File && imageFile.size > 0) {
+      const bytes = await imageFile.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+
+      const fileName = `${Date.now()}-${imageFile.name}`;
+      const filePath = `public/uploads/${fileName}`;
+
+      const fs = await import("fs/promises");
+      await fs.writeFile(filePath, buffer);
+
+      imageUrl = `/uploads/${fileName}`;
+    }
+
+    const imageFromForm = formData.get("image") as string;
+
+    const body = {
+      title: formData.get("title") as string,
+      description: formData.get("description") as string,
+      category: formData.get("category") as string,
+      seller: formData.get("seller") as string,
+      status: formData.get("status") as string,
+      price: Number(formData.get("price")),
+      email: formData.get("email") as string,
+    };
+
+    if (body.email && !body.email.includes("@")) {
       return new NextResponse("Invalid email", { status: 400 });
     }
 
@@ -58,14 +86,13 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         ...(body.status !== undefined && { status: body.status }),
         ...(body.price !== undefined && { price: body.price }),
         ...(body.email !== undefined && { email: body.email }),
+        image: imageUrl ?? imageFromForm,
       })
       .where(eq(advert.id, numericId))
       .returning();
 
     if (!updated.length) {
-      return new NextResponse("Advert not found", {
-        status: 404,
-      });
+      return new NextResponse("Advert not found", { status: 404 });
     }
 
     return NextResponse.json(updated[0]);
@@ -77,6 +104,63 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     });
   }
 }
+// export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+//   try {
+//     const { id } = await params;
+
+//     const numericId = Number(id);
+
+//     if (!Number.isFinite(numericId)) {
+//       return new NextResponse("Invalid ID", { status: 400 });
+//     }
+
+//     const formData = await req.formData();
+
+//     const title = formData.get("title") as string;
+//     const description = formData.get("description") as string;
+//     const category = formData.get("category") as string;
+//     const seller = formData.get("seller") as string;
+//     const status = formData.get("status") as string;
+//     const email = formData.get("email") as string;
+//     const price = Number(formData.get("price"));
+
+//     const imageFile = formData.get("image") as File | null;
+
+//     let imageUrl: string | undefined;
+
+//     if (imageFile) {
+//       const bytes = await imageFile.arrayBuffer();
+//       const buffer = Buffer.from(bytes);
+
+//       const fileName = `${Date.now()}-${imageFile.name}`;
+//       const filePath = `public/uploads/${fileName}`;
+
+//       await import("fs/promises").then((fs) => fs.writeFile(filePath, buffer));
+
+//       imageUrl = `/uploads/${fileName}`;
+//     }
+
+//     const updated = await db
+//       .update(advert)
+//       .set({
+//         ...(title !== undefined && { title }),
+//         ...(description !== undefined && { description }),
+//         ...(category !== undefined && { category }),
+//         ...(seller !== undefined && { seller }),
+//         ...(status !== undefined && { status }),
+//         ...(price !== undefined && { price }),
+//         ...(email !== undefined && { email }),
+//         ...(imageUrl && { image: imageUrl }),
+//       })
+//       .where(eq(advert.id, numericId))
+//       .returning();
+
+//     return NextResponse.json(updated[0]);
+//   } catch (error) {
+//     console.error(error);
+//     return new NextResponse("Failed to update advert", { status: 500 });
+//   }
+// }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

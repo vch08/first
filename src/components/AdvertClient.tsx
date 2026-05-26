@@ -5,7 +5,9 @@ import {
   Button,
   Card,
   Divider,
+  FileInput,
   Group,
+  Image,
   NumberInput,
   Select,
   Stack,
@@ -15,6 +17,7 @@ import {
 } from "@mantine/core";
 import { openConfirmModal } from "@mantine/modals";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Advert } from "@/db/schemas";
 
@@ -26,6 +29,8 @@ type Props = {
 export default function AdvertClient({ advert, locale }: Props) {
   const [isEditing, setIsEditing] = useState(false);
 
+  const router = useRouter();
+
   const [form, setForm] = useState({
     title: advert.title,
     description: advert.description,
@@ -34,15 +39,14 @@ export default function AdvertClient({ advert, locale }: Props) {
     status: advert.status,
     price: advert.price,
     email: advert.email ?? "",
+    image: advert.image ?? "",
+    imageFile: null as File | null,
   });
 
   async function reserveAdvert() {
     try {
       const res = await fetch(`/api/adverts/${advert.id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
           status: "Rezervováno",
         }),
@@ -84,16 +88,6 @@ export default function AdvertClient({ advert, locale }: Props) {
     window.location.href = `/${locale}`;
   }
 
-  // function confirmDelete() {
-  //   modals.openConfirmModal({
-  //     title: "Smazat inzerát",
-  //     children: "Opravdu chceš smazat tuto nabídku?",
-  //     labels: { confirm: "Smazat", cancel: "Zrušit" },
-  //     confirmProps: { color: "red" },
-  //     onConfirm: deleteAdvert,
-  //   });
-  // }
-
   function confirmDelete() {
     openConfirmModal({
       title: "Smazat inzerát",
@@ -106,24 +100,44 @@ export default function AdvertClient({ advert, locale }: Props) {
 
   async function saveChanges() {
     try {
+      const formData = new FormData();
+
+      formData.append("title", form.title);
+      formData.append("description", form.description);
+      formData.append("price", String(form.price));
+      formData.append("category", form.category);
+      formData.append("seller", form.seller);
+      formData.append("status", form.status);
+      formData.append("email", form.email);
+
+      if (form.imageFile) {
+        formData.append("image", form.imageFile);
+      } else {
+        formData.append("image", form.image);
+      }
+
       const res = await fetch(`/api/adverts/${advert.id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(form),
+        body: formData,
       });
 
+      const text = await res.text();
+
       if (!res.ok) {
-        console.error("Save failed");
+        console.error("SAVE FAILED:", res.status, text);
         return;
       }
 
-      const updated = await res.json();
+      const updated = JSON.parse(text);
 
-      setForm(updated);
+      setForm({
+        ...form,
+        ...updated,
+        imageFile: null,
+      });
 
       setIsEditing(false);
+      router.refresh();
     } catch (err) {
       console.error("Error saving advert:", err);
     }
@@ -239,6 +253,42 @@ export default function AdvertClient({ advert, locale }: Props) {
                 <Badge color={form.status === "Volno" ? "green" : "purple"}>{form.status}</Badge>
               )}
             </Group>
+            <div>
+              <Text fw={600} mb={5}>
+                Obrázek
+              </Text>
+
+              {isEditing ? (
+                <TextInput
+                  value={form.image}
+                  onChange={(e) => setForm({ ...form, image: e.currentTarget.value })}
+                  placeholder="https://..."
+                />
+              ) : form.image ? (
+                <Image
+                  src={form.image}
+                  alt="advert"
+                  h={220}
+                  w="100%"
+                  fit="contain"
+                  style={{
+                    backgroundColor: "#f5f5f5",
+                    borderRadius: 8,
+                  }}
+                />
+              ) : (
+                <Text c="dimmed">Žádný obrázek</Text>
+              )}
+            </div>
+
+            {isEditing && (
+              <FileInput
+                placeholder="Vložit obrázek"
+                accept="image/*"
+                value={form.imageFile}
+                onChange={(file) => setForm({ ...form, imageFile: file })}
+              />
+            )}
           </Stack>
 
           {isEditing ? (

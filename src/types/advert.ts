@@ -6,4 +6,5 @@ export type CreateAdvertInput = {
   status: string;
   seller: string;
   email: string;
+  image?: string;
 };

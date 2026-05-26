@@ -17,6 +17,7 @@ import {
 } from "@mantine/core";
 import { isEmail, useForm } from "@mantine/form";
 import { IconSearch } from "@tabler/icons-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -41,28 +42,6 @@ export default function App() {
     fetchAdverts();
   }, [fetchAdverts]);
 
-  // const handleAddAdvert = async (values: Omit<Advert, "id">) => {
-  //   try {
-  //     const res = await fetch("/api/adverts", {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify(values),
-  //     });
-
-  //     if (!res.ok) {
-  //       throw new Error("Failed to create advert");
-  //     }
-
-  //     await fetchAdverts();
-  //     form.reset();
-  //     setOpened(false);
-  //   } catch (err) {
-  //     console.error(err);
-  //   }
-  // };
-
   const handleAddAdvert = async (values: CreateAdvertInput) => {
     if (!values.email) {
       console.error("EMAIL MISSING:", values);
@@ -79,16 +58,29 @@ export default function App() {
       email: values.email.trim(),
     };
 
+    const formData = new FormData();
+
+    formData.append("title", values.title);
+    formData.append("description", values.description);
+    formData.append("category", values.category);
+    formData.append("seller", values.seller);
+    formData.append("email", values.email.trim());
+    formData.append("price", String(values.price));
+    formData.append("status", values.status);
+
+    if (values.image) {
+      formData.append("image", values.image);
+    }
+
     const res = await fetch("/api/adverts", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: formData,
     });
 
     const data = await res.json().catch(() => null);
 
     if (!res.ok) {
-      console.error("SERVER ERROR:", data);
+      console.error("SERVER ERROR:", data?.error || data);
       throw new Error(data?.error || "Failed");
     }
 
@@ -106,6 +98,8 @@ export default function App() {
       status: "",
       seller: "",
       email: "",
+      image: "",
+      imageFile: null as File | null,
     },
 
     validate: {
@@ -171,6 +165,7 @@ export default function App() {
 
             <TextInput label="Prodejce" {...form.getInputProps("seller")} />
             <TextInput label="Email" {...form.getInputProps("email")} />
+            <TextInput label="Image URL" placeholder="Paste image link (optional)" {...form.getInputProps("image")} />
 
             <Button onClick={() => {}} type="submit" color="orange">
               Uložit
@@ -213,7 +208,21 @@ export default function App() {
       <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
         {filteredAdverts.map((advert) => (
           <Card key={advert.id} shadow="sm" padding="lg" radius="md" withBorder>
-            <Stack>
+            <Card.Section>
+              <Image
+                src={advert.image?.trim() ? advert.image : "/placeholder.jpg"}
+                alt="advert"
+                width={300}
+                height={200}
+                style={{
+                  objectFit: "contain",
+                  width: "100%",
+                  height: "200px",
+                  background: "#f5f5f5",
+                }}
+              />
+            </Card.Section>
+            <Stack style={{ marginTop: "10px" }}>
               <Group justify="space-between">
                 <Text fw={700}>{advert.title}</Text>
 
