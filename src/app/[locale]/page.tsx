@@ -68,9 +68,7 @@ export default function App() {
     formData.append("price", String(values.price));
     formData.append("status", values.status);
 
-    if (values.image) {
-      formData.append("image", values.image);
-    }
+    formData.append("image", values.image ?? "");
 
     const res = await fetch("/api/adverts", {
       method: "POST",

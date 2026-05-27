@@ -43,21 +43,29 @@ export default function AdvertClient({ advert, locale }: Props) {
     imageFile: null as File | null,
   });
 
-  async function reserveAdvert() {
+  async function reserveAdvert(id: number | string) {
     try {
-      const res = await fetch(`/api/adverts/${advert.id}`, {
-        method: "PUT",
-        body: JSON.stringify({
-          status: "Rezervováno",
-        }),
-      });
-
-      if (!res.ok) {
-        console.error("Reservation failed");
+      if (!id) {
+        console.error("Missing ID");
         return;
       }
 
-      const updated = await res.json();
+      const formData = new FormData();
+      formData.append("status", "Rezervováno");
+
+      const res = await fetch(`/api/adverts/${id}`, {
+        method: "PUT",
+        body: formData,
+      });
+
+      const text = await res.text();
+
+      if (!res.ok) {
+        console.error("Reservation failed:", text);
+        return;
+      }
+
+      const updated = JSON.parse(text);
 
       setForm(updated);
     } catch (err) {
@@ -65,17 +73,22 @@ export default function AdvertClient({ advert, locale }: Props) {
     }
   }
 
-  async function deleteAdvert() {
-    console.log("DELETE CLICKED");
+  async function deleteAdvert(id: number | string) {
+    console.log("DELETE CLICKED:", id);
+
+    if (!id) {
+      console.error("Missing ID");
+      return;
+    }
 
     const confirmed = window.confirm("Opravdu chceš smazat tuto nabídku?");
     if (!confirmed) return;
 
-    const res = await fetch(`/api/adverts/${advert.id}`, {
+    const res = await fetch(`/api/adverts/${id}`, {
       method: "DELETE",
     });
 
-    const text = await res.text(); // 👈 IMPORTANT
+    const text = await res.text();
 
     console.log("DELETE STATUS:", res.status);
     console.log("DELETE RESPONSE:", text);
@@ -94,53 +107,42 @@ export default function AdvertClient({ advert, locale }: Props) {
       children: "Opravdu chceš smazat tuto nabídku?",
       labels: { confirm: "Smazat", cancel: "Zrušit" },
       confirmProps: { color: "red" },
-      onConfirm: deleteAdvert,
+      onConfirm: () => deleteAdvert(advert.id),
     });
   }
 
-  async function saveChanges() {
-    try {
-      const formData = new FormData();
+  async function saveChanges(id: number | string, values: any) {
+    const formData = new FormData();
 
-      formData.append("title", form.title);
-      formData.append("description", form.description);
-      formData.append("price", String(form.price));
-      formData.append("category", form.category);
-      formData.append("seller", form.seller);
-      formData.append("status", form.status);
-      formData.append("email", form.email);
+    formData.append("title", values.title);
+    formData.append("description", values.description);
+    formData.append("category", values.category);
+    formData.append("status", values.status);
+    formData.append("seller", values.seller);
+    formData.append("email", values.email);
+    formData.append("price", String(values.price));
 
-      if (form.imageFile) {
-        formData.append("image", form.imageFile);
-      } else {
-        formData.append("image", form.image);
-      }
-
-      const res = await fetch(`/api/adverts/${advert.id}`, {
-        method: "PUT",
-        body: formData,
-      });
-
-      const text = await res.text();
-
-      if (!res.ok) {
-        console.error("SAVE FAILED:", res.status, text);
-        return;
-      }
-
-      const updated = JSON.parse(text);
-
-      setForm({
-        ...form,
-        ...updated,
-        imageFile: null,
-      });
-
-      setIsEditing(false);
-      router.refresh();
-    } catch (err) {
-      console.error("Error saving advert:", err);
+    if (values.image) {
+      formData.append("image", values.image);
     }
+
+    if (values.imageFile) {
+      formData.append("imageFile", values.imageFile);
+    }
+
+    const res = await fetch(`/api/adverts/${id}`, {
+      method: "PUT",
+      body: formData,
+    });
+
+    const text = await res.text();
+
+    if (!res.ok) {
+      console.error("SAVE FAILED:", text);
+      return;
+    }
+
+    return JSON.parse(text);
   }
 
   return (
@@ -312,7 +314,8 @@ export default function AdvertClient({ advert, locale }: Props) {
                 variant="light"
                 onClick={async () => {
                   if (isEditing) {
-                    await saveChanges();
+                    await saveChanges(advert.id, form);
+                    setIsEditing(false);
                   } else {
                     setIsEditing(true);
                   }
@@ -332,7 +335,7 @@ export default function AdvertClient({ advert, locale }: Props) {
               color={form.status === "Volno" ? "orange" : "gray"}
               variant="light"
               disabled={form.status !== "Volno"}
-              onClick={reserveAdvert}
+              onClick={() => reserveAdvert(advert.id)}
             >
               {form.status === "Volno" ? "Rezervovat" : "Rezervováno"}
             </Button>
