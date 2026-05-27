@@ -1,4 +1,5 @@
 import AdvertClient from "@/components/AdvertClient";
+import PaidAdvertPayment from "@/components/PaidAdvertPayment";
 
 export default async function Page({ params }: { params: Promise<{ locale: string; id: string }> }) {
   const { locale, id } = await params;

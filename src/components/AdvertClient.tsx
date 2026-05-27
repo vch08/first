@@ -19,6 +19,7 @@ import { openConfirmModal } from "@mantine/modals";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import PaidAdvertPayment from "@/components/PaidAdvertPayment";
 import type { Advert } from "@/db/schemas";
 
 type Props = {
@@ -149,6 +150,7 @@ export default function AdvertClient({ advert, locale }: Props) {
     <div style={{ maxWidth: 800, margin: "0 auto", padding: 24 }}>
       <Card shadow="md" radius="lg" p="xl" withBorder>
         <Stack gap="md">
+          {/* TITLE */}
           <div>
             <Text fw={700} size="xl" mb={5}>
               Název
@@ -160,28 +162,6 @@ export default function AdvertClient({ advert, locale }: Props) {
               <Text size="lg">{form.title}</Text>
             )}
           </div>
-
-          <Divider />
-
-          <Group justify="space-between" align="flex-start"></Group>
-
-          <Group justify="space-between" align="flex-start">
-            <Text fw={600} mb={5}>
-              Cena
-            </Text>
-            {isEditing ? (
-              <NumberInput
-                value={form.price}
-                onChange={(value) => setForm({ ...form, price: Number(value) || 0 })}
-                min={0}
-                style={{ width: 120 }}
-              />
-            ) : (
-              <Badge color={form.price == null || Number(form.price) === 0 ? "green" : "orange"}>
-                {form.price == null || Number(form.price) === 0 ? "Zdarma" : `${Number(form.price).toFixed(0)} Kč`}
-              </Badge>
-            )}
-          </Group>
 
           <Divider />
 
@@ -255,51 +235,78 @@ export default function AdvertClient({ advert, locale }: Props) {
                 <Badge color={form.status === "Volno" ? "green" : "purple"}>{form.status}</Badge>
               )}
             </Group>
-            <div>
-              <Text fw={600} mb={5}>
-                Obrázek
-              </Text>
-
-              {isEditing ? (
-                <TextInput
-                  value={form.image}
-                  onChange={(e) => setForm({ ...form, image: e.currentTarget.value })}
-                  placeholder="https://..."
-                />
-              ) : form.image ? (
-                <Image
-                  src={form.image}
-                  alt="advert"
-                  h={220}
-                  w="100%"
-                  fit="contain"
-                  style={{
-                    backgroundColor: "#f5f5f5",
-                    borderRadius: 8,
-                  }}
-                />
-              ) : (
-                <Text c="dimmed">Žádný obrázek</Text>
-              )}
-            </div>
-
-            {isEditing && (
-              <FileInput
-                placeholder="Vložit obrázek"
-                accept="image/*"
-                value={form.imageFile}
-                onChange={(file) => setForm({ ...form, imageFile: file })}
-              />
-            )}
           </Stack>
 
-          {isEditing ? (
+          <Divider />
+
+          {/* IMAGE */}
+          <div>
+            <Text fw={600} mb={5}>
+              Obrázek
+            </Text>
+
+            {isEditing ? (
+              <TextInput
+                value={form.image}
+                onChange={(e) => setForm({ ...form, image: e.currentTarget.value })}
+                placeholder="https://..."
+              />
+            ) : form.image ? (
+              <Image
+                src={form.image}
+                alt="advert"
+                h={220}
+                w="100%"
+                fit="contain"
+                style={{
+                  backgroundColor: "#f5f5f5",
+                  borderRadius: 8,
+                }}
+              />
+            ) : (
+              <Text c="dimmed">Žádný obrázek</Text>
+            )}
+          </div>
+
+          {isEditing && (
+            <FileInput
+              placeholder="Vložit obrázek"
+              accept="image/*"
+              value={form.imageFile}
+              onChange={(file) => setForm({ ...form, imageFile: file })}
+            />
+          )}
+
+          <Divider my="md" />
+
+          <Group justify="space-between" align="flex-start">
+            <Text fw={600} mb={5}>
+              Cena
+            </Text>
+
+            {isEditing ? (
+              <NumberInput
+                value={form.price}
+                onChange={(value) => setForm({ ...form, price: Number(value) || 0 })}
+                min={0}
+                style={{ width: 120 }}
+              />
+            ) : (
+              <Badge color={form.price == null || Number(form.price) === 0 ? "green" : "orange"}>
+                {form.price == null || Number(form.price) === 0 ? "Zdarma" : `${Number(form.price).toFixed(0)} Kč`}
+              </Badge>
+            )}
+          </Group>
+
+          <PaidAdvertPayment price={form.price} />
+
+          <Divider my="md" />
+
+          {isEditing && (
             <Button color="red" variant="light" onClick={confirmDelete}>
               Smazat
             </Button>
-          ) : null}
-
-          <Divider />
+          )}
 
           <Group justify="space-between">
             <Link href={`/${locale}`}>
