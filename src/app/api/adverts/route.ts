@@ -37,6 +37,9 @@ export async function POST(req: Request) {
         price,
         status,
         image,
+
+        accountNumber: formData.get("accountNumber") as string,
+        paymentMessage: formData.get("paymentMessage") as string,
       })
       .returning();
 

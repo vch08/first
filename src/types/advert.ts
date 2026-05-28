@@ -8,4 +8,6 @@ export type CreateAdvertInput = {
   email: string;
   image?: string;
   imageFile?: File | null;
+  accountNumber: string;
+  paymentMessage: string;
 };

@@ -27,7 +27,10 @@ type Props = {
   locale: string;
 };
 
+console.log("FILE LOADED: AdvertClient.tsx");
+
 export default function AdvertClient({ advert, locale }: Props) {
+  console.log("ADVERT FROM API:", advert);
   const [isEditing, setIsEditing] = useState(false);
 
   const router = useRouter();
@@ -42,6 +45,8 @@ export default function AdvertClient({ advert, locale }: Props) {
     email: advert.email ?? "",
     image: advert.image ?? "",
     imageFile: null as File | null,
+    accountNumber: advert.accountNumber ?? "",
+    paymentMessage: advert.paymentMessage ?? "",
   });
 
   async function reserveAdvert(id: number | string) {
@@ -122,6 +127,8 @@ export default function AdvertClient({ advert, locale }: Props) {
     formData.append("seller", values.seller);
     formData.append("email", values.email);
     formData.append("price", String(values.price));
+    formData.append("accountNumber", values.accountNumber);
+    formData.append("paymentMessage", values.paymentMessage);
 
     if (values.image) {
       formData.append("image", values.image);
@@ -239,7 +246,6 @@ export default function AdvertClient({ advert, locale }: Props) {
 
           <Divider />
 
-          {/* IMAGE */}
           <div>
             <Text fw={600} mb={5}>
               Obrázek
@@ -298,7 +304,11 @@ export default function AdvertClient({ advert, locale }: Props) {
             )}
           </Group>
 
-          <PaidAdvertPayment price={form.price} />
+          <PaidAdvertPayment
+            price={Number(form.price)}
+            accountNumber={form.accountNumber}
+            paymentMessage={form.paymentMessage}
+          />
 
           <Divider my="md" />
 

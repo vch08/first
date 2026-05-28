@@ -18,6 +18,10 @@ export const advert = sqliteTable("advert", {
   email: text("email").notNull(),
 
   image: text("image"),
+
+  accountNumber: text("accountNumber"),
+
+  paymentMessage: text("paymentMessage"),
 });
 
 export type Advert = typeof advert.$inferSelect;

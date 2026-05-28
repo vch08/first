@@ -67,6 +67,8 @@ export default function App() {
     formData.append("email", values.email.trim());
     formData.append("price", String(values.price));
     formData.append("status", values.status);
+    formData.append("accountNumber", form.values.accountNumber);
+    formData.append("paymentMessage", values.paymentMessage);
 
     formData.append("image", values.image ?? "");
 
@@ -98,6 +100,8 @@ export default function App() {
       email: "",
       image: "",
       imageFile: null as File | null,
+      accountNumber: "",
+      paymentMessage: "",
     },
 
     validate: {
@@ -107,6 +111,7 @@ export default function App() {
       price: (value) => (value >= 0 ? null : "Cena musí být 0 nebo vyšší"),
       seller: (value) => (value.trim() ? null : "Prodejce je povinný"),
       email: isEmail("Neplatný email"),
+      accountNumber: (value) => (/^CZ\d{22}$/.test(value) ? null : "Neplatný IBAN (CZ formát)"),
     },
   });
 
@@ -163,7 +168,18 @@ export default function App() {
 
             <TextInput label="Prodejce" {...form.getInputProps("seller")} />
             <TextInput label="Email" {...form.getInputProps("email")} />
+
             <TextInput label="Image URL" placeholder="Paste image link (optional)" {...form.getInputProps("image")} />
+
+            <TextInput
+              label="IBAN (CZ účet)"
+              placeholder="CZ6508000000192000145399"
+              value={form.values.accountNumber}
+              onChange={(e) => form.setFieldValue("accountNumber", e.currentTarget.value.toUpperCase())}
+              error={form.errors.accountNumber}
+            />
+
+            <TextInput label="Zpráva pro platbu" {...form.getInputProps("paymentMessage")} />
 
             <Button onClick={() => {}} type="submit" color="orange">
               Uložit
