@@ -36,12 +36,13 @@ export default function AdvertClient({ advert, locale }: Props) {
   const router = useRouter();
 
   const [form, setForm] = useState({
-    title: advert.title,
-    description: advert.description,
-    category: advert.category,
-    seller: advert.seller,
-    status: advert.status,
-    price: advert.price,
+    title: advert.title ?? "",
+    description: advert.description ?? "",
+    category: advert.category ?? "",
+    seller: advert.seller ?? "",
+    status: advert.status ?? "",
+    price: advert.price ?? 0,
+
     email: advert.email ?? "",
     image: advert.image ?? "",
     imageFile: null as File | null,
@@ -130,9 +131,7 @@ export default function AdvertClient({ advert, locale }: Props) {
     formData.append("accountNumber", values.accountNumber);
     formData.append("paymentMessage", values.paymentMessage);
 
-    if (values.image) {
-      formData.append("image", values.image);
-    }
+    formData.append("image", values.image);
 
     if (values.imageFile) {
       formData.append("imageFile", values.imageFile);
@@ -304,11 +303,13 @@ export default function AdvertClient({ advert, locale }: Props) {
             )}
           </Group>
 
-          <PaidAdvertPayment
-            price={Number(form.price)}
-            accountNumber={form.accountNumber}
-            paymentMessage={form.paymentMessage}
-          />
+          {Number(form.price) > 0 && (
+            <PaidAdvertPayment
+              price={Number(form.price)}
+              accountNumber={form.accountNumber}
+              paymentMessage={form.paymentMessage}
+            />
+          )}
 
           <Divider my="md" />
 
